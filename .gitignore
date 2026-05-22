@@ -1,0 +1,14 @@
+build/
+install/
+log/
+__pycache__/
+*.pyc
+*.pt
+*.zip
+*.bag
+*.db3
+*.mp4
+*.avi
+*.png
+*.jpg
+*.jpeg
