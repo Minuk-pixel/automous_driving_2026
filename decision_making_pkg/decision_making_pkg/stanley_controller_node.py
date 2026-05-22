@@ -18,8 +18,17 @@ TIMER = 0.05
 VEHICLE_SPEED_MPS = 0.5
 LEFT_SPEED_COMMAND = 100
 RIGHT_SPEED_COMMAND = 100
+# vehicle_speed_mps 크게 설정
+# → 같은 CTE에도 조향 반응 약해짐
+
+# vehicle_speed_mps 작게 설정
+# → 같은 CTE에도 조향 반응 강해짐
+
+# softening_speed_mps 크게 설정
+# → 저속에서 조향 튐 완화
 
 STANLEY_GAIN = 0.8
+HEADING_GAIN = 0.7
 CURVATURE_GAIN = 0.0
 SOFTENING_SPEED_MPS = 0.15
 FRONT_AXLE_OFFSET_M = 0.0
@@ -46,6 +55,7 @@ class StanleyControllerNode(Node):
         self.right_speed_command = self.declare_parameter('right_speed_command', RIGHT_SPEED_COMMAND).value
 
         self.stanley_gain = self.declare_parameter('stanley_gain', STANLEY_GAIN).value
+        self.heading_gain = self.declare_parameter('heading_gain', HEADING_GAIN).value
         self.curvature_gain = self.declare_parameter('curvature_gain', CURVATURE_GAIN).value
         self.softening_speed_mps = self.declare_parameter('softening_speed_mps', SOFTENING_SPEED_MPS).value
         self.front_axle_offset_m = self.declare_parameter('front_axle_offset_m', FRONT_AXLE_OFFSET_M).value
@@ -67,6 +77,7 @@ class StanleyControllerNode(Node):
             curvature_gain=self.curvature_gain,
             softening_speed_mps=self.softening_speed_mps,
             front_axle_offset_m=self.front_axle_offset_m,
+            heading_gain=self.heading_gain,
         )
 
         self.latest_lane_trajectory = None

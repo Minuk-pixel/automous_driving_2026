@@ -7,9 +7,6 @@ from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.qos import QoSReliabilityPolicy
 
-from cv_bridge import CvBridge
-
-from sensor_msgs.msg import Image
 from interfaces_pkg.msg import TargetPoint, LaneInfo, LaneTrajectory, DetectionArray
 
 #---------------Variable Setting---------------
@@ -19,10 +16,6 @@ SUB_TOPIC_NAME = "detections"
 # Publish할 토픽 이름
 PUB_TOPIC_NAME = "yolov8_lane_info"
 PUB_TRAJECTORY_TOPIC_NAME = "lane_trajectory"
-ROI_IMAGE_TOPIC_NAME = "roi_image"
-
-# 화면에 이미지를 처리하는 과정을 띄울것인지 여부: True, 또는 False 중 택1하여 입력
-SHOW_IMAGE = True
 
 # YOLO segmentation class for the drivable road area
 DRIVABLE_CLASS_NAME = "lane"
@@ -33,7 +26,7 @@ IPM_DST_LEFT_RATIO = 0.3
 IPM_DST_RIGHT_RATIO = 0.7
 
 # Row scan and meter calibration parameters.
-ROW_STRIDE = 1
+ROW_STRIDE = 4
 MIN_ROAD_WIDTH_PX = 20
 MIN_FIT_POINTS = 30
 LATERAL_METER_PER_PIXEL = 0.005
@@ -49,7 +42,6 @@ class Yolov8InfoExtractor(Node):
         self.sub_topic = self.declare_parameter('sub_detection_topic', SUB_TOPIC_NAME).value
         self.pub_topic = self.declare_parameter('pub_topic', PUB_TOPIC_NAME).value
         self.pub_trajectory_topic = self.declare_parameter('pub_trajectory_topic', PUB_TRAJECTORY_TOPIC_NAME).value
-        self.show_image = self.declare_parameter('show_image', SHOW_IMAGE).value
         self.drivable_class_name = self.declare_parameter('drivable_class_name', DRIVABLE_CLASS_NAME).value
         self.ipm_src_points = self.declare_parameter('ipm_src_points', IPM_SRC_POINTS).value
         self.ipm_dst_left_ratio = self.declare_parameter('ipm_dst_left_ratio', IPM_DST_LEFT_RATIO).value
@@ -60,8 +52,6 @@ class Yolov8InfoExtractor(Node):
         self.lateral_meter_per_pixel = self.declare_parameter('lateral_meter_per_pixel', LATERAL_METER_PER_PIXEL).value
         self.longitudinal_meter_per_pixel = self.declare_parameter('longitudinal_meter_per_pixel', LONGITUDINAL_METER_PER_PIXEL).value
         self.ego_x_px = self.declare_parameter('ego_x_px', EGO_X_PX).value
-
-        self.cv_bridge = CvBridge()
 
         # QoS settings
         self.qos_profile = QoSProfile(
@@ -74,9 +64,6 @@ class Yolov8InfoExtractor(Node):
         self.subscriber = self.create_subscription(DetectionArray, self.sub_topic, self.yolov8_detections_callback, self.qos_profile)
         self.publisher = self.create_publisher(LaneInfo, self.pub_topic, self.qos_profile)
         self.trajectory_publisher = self.create_publisher(LaneTrajectory, self.pub_trajectory_topic, self.qos_profile)
-
-        # ROI 이미지 퍼블리셔 추가
-        self.roi_image_publisher = self.create_publisher(Image, ROI_IMAGE_TOPIC_NAME, self.qos_profile)
 
     def yolov8_detections_callback(self, detection_msg: DetectionArray):
         if len(detection_msg.detections) == 0:
@@ -92,20 +79,6 @@ class Yolov8InfoExtractor(Node):
 
         bev_mask = self._bird_convert(binary_mask)
         midpoints_px = self._scan_midpoints(bev_mask)
-
-        if self.show_image:
-            debug_bev = cv2.cvtColor(bev_mask, cv2.COLOR_GRAY2BGR)
-            for x_px, y_px in midpoints_px[::max(1, len(midpoints_px) // 80)]:
-                cv2.circle(debug_bev, (int(round(x_px)), int(round(y_px))), 2, (0, 0, 255), -1)
-            cv2.imshow('lane_binary_mask', binary_mask)
-            cv2.imshow('lane_bev_midpoints', debug_bev)
-            cv2.waitKey(1)
-
-        try:
-            roi_image_msg = self.cv_bridge.cv2_to_imgmsg(bev_mask, encoding="mono8")
-            self.roi_image_publisher.publish(roi_image_msg)
-        except Exception as e:
-            self.get_logger().error(f"Failed to convert and publish BEV mask: {e}")
 
         if midpoints_px.shape[0] < self.min_fit_points:
             self.get_logger().warn(
@@ -256,7 +229,6 @@ def main(args=None):
         print("\n\nshutdown\n\n")
     finally:
         node.destroy_node()
-        cv2.destroyAllWindows()
         rclpy.shutdown()
   
 if __name__ == '__main__':

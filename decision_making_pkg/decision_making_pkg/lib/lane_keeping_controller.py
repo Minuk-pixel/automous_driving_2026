@@ -23,11 +23,13 @@ class LaneKeepingController:
         curvature_gain: float,
         softening_speed_mps: float,
         front_axle_offset_m: float,
+        heading_gain: float,
     ):
         self.stanley_gain = float(stanley_gain)
         self.curvature_gain = float(curvature_gain)
         self.softening_speed_mps = float(softening_speed_mps)
         self.front_axle_offset_m = float(front_axle_offset_m)
+        self.heading_gain = float(heading_gain)
 
     def compute_delta(self, coeffs: Tuple[float, float, float], speed_mps: float):
         a, b, c = map(float, coeffs)
@@ -43,7 +45,7 @@ class LaneKeepingController:
         speed_denom = abs(float(speed_mps)) + self.softening_speed_mps
         stanley = np.arctan((self.stanley_gain * cte) / speed_denom)
         feedforward = self.curvature_gain * curvature
-        delta = theta_e + stanley + feedforward
+        delta = self.heading_gain * theta_e + stanley + feedforward
 
         debug = StanleyControlDebug(
             theta_e_rad=float(theta_e),
