@@ -16,8 +16,8 @@ PUB_TOPIC_NAME = "topic_control_signal"
 
 TIMER = 0.05
 VEHICLE_SPEED_MPS = 0.5
-LEFT_SPEED_COMMAND = 150
-RIGHT_SPEED_COMMAND = 150
+LEFT_SPEED_COMMAND = 255
+RIGHT_SPEED_COMMAND = 255
 # vehicle_speed_mps 크게 설정
 # → 같은 CTE에도 조향 반응 약해짐
 
@@ -27,8 +27,8 @@ RIGHT_SPEED_COMMAND = 150
 # softening_speed_mps 크게 설정
 # → 저속에서 조향 튐 완화
 
-STANLEY_GAIN = 0.8
-HEADING_GAIN = 0.2
+STANLEY_GAIN = 1.0 # 1.4
+HEADING_GAIN = 0.1
 CURVATURE_GAIN = 0.0
 SOFTENING_SPEED_MPS = 0.15
 FRONT_AXLE_OFFSET_M = 0.0

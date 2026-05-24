@@ -22,9 +22,11 @@ DRIVABLE_CLASS_NAME = "lane"
 
 # IPM source points in the original camera image.
 IPM_SRC_POINTS = [238.0, 316.0, 402.0, 313.0, 501.0, 476.0, 155.0, 476.0]
+IPM_SRC_BASE_WIDTH = 640.0
+IPM_SRC_BASE_HEIGHT = 480.0
 IPM_DST_LEFT_RATIO = 0.3
 IPM_DST_RIGHT_RATIO = 0.7
-BEV_HEIGHT_SCALE = 1.5
+BEV_HEIGHT_SCALE = 3.0
 
 # Row scan and meter calibration parameters.
 ROW_STRIDE = 4
@@ -45,6 +47,8 @@ class Yolov8InfoExtractor(Node):
         self.pub_trajectory_topic = self.declare_parameter('pub_trajectory_topic', PUB_TRAJECTORY_TOPIC_NAME).value
         self.drivable_class_name = self.declare_parameter('drivable_class_name', DRIVABLE_CLASS_NAME).value
         self.ipm_src_points = self.declare_parameter('ipm_src_points', IPM_SRC_POINTS).value
+        self.ipm_src_base_width = self.declare_parameter('ipm_src_base_width', IPM_SRC_BASE_WIDTH).value
+        self.ipm_src_base_height = self.declare_parameter('ipm_src_base_height', IPM_SRC_BASE_HEIGHT).value
         self.ipm_dst_left_ratio = self.declare_parameter('ipm_dst_left_ratio', IPM_DST_LEFT_RATIO).value
         self.ipm_dst_right_ratio = self.declare_parameter('ipm_dst_right_ratio', IPM_DST_RIGHT_RATIO).value
         self.bev_height_scale = self.declare_parameter('bev_height_scale', BEV_HEIGHT_SCALE).value
@@ -131,7 +135,7 @@ class Yolov8InfoExtractor(Node):
     def _bird_convert(self, img):
         h, w = img.shape[:2]
         bev_h = max(1, int(round(h * float(self.bev_height_scale))))
-        src_mat = np.float32(self.ipm_src_points).reshape(4, 2)
+        src_mat = self._scaled_ipm_src_points(w, h)
         dst_mat = np.float32([
             [round(w * self.ipm_dst_left_ratio), 0],
             [round(w * self.ipm_dst_right_ratio), 0],
@@ -142,6 +146,14 @@ class Yolov8InfoExtractor(Node):
         warped = cv2.warpPerspective(img, transform_matrix, (w, bev_h), flags=cv2.INTER_NEAREST)
         _, binary_warped = cv2.threshold(warped, 127, 255, cv2.THRESH_BINARY)
         return binary_warped
+
+    def _scaled_ipm_src_points(self, image_width, image_height):
+        src_mat = np.float32(self.ipm_src_points).reshape(4, 2)
+        base_w = max(float(self.ipm_src_base_width), 1.0)
+        base_h = max(float(self.ipm_src_base_height), 1.0)
+        src_mat[:, 0] *= float(image_width) / base_w
+        src_mat[:, 1] *= float(image_height) / base_h
+        return src_mat
 
     def _scan_midpoints(self, bev_mask):
         h, _ = bev_mask.shape[:2]

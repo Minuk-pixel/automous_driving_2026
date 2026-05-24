@@ -10,6 +10,8 @@ def generate_launch_description():
     data_source = LaunchConfiguration('data_source')
     cam_num = LaunchConfiguration('cam_num')
     camera_timer = LaunchConfiguration('camera_timer')
+    image_width = LaunchConfiguration('image_width')
+    image_height = LaunchConfiguration('image_height')
     video_path = LaunchConfiguration('video_path')
     show_image = LaunchConfiguration('show_image')
     show_lane_debug = LaunchConfiguration('show_lane_debug')
@@ -34,6 +36,8 @@ def generate_launch_description():
         DeclareLaunchArgument('data_source', default_value='camera'),
         DeclareLaunchArgument('cam_num', default_value='4'),
         DeclareLaunchArgument('camera_timer', default_value='0.1'),
+        DeclareLaunchArgument('image_width', default_value='320'),
+        DeclareLaunchArgument('image_height', default_value='240'),
         DeclareLaunchArgument(
             'video_path',
             default_value='/home/minuk/ros2_ws/src/camera_perception_pkg/camera_perception_pkg/lib/Collected_Datasets/driving_simulation.mp4'
@@ -47,9 +51,9 @@ def generate_launch_description():
         DeclareLaunchArgument('yolo_frame_skip', default_value='2'),
         DeclareLaunchArgument('yolo_half', default_value='true'),
         DeclareLaunchArgument('yolo_image_reliability', default_value='2'),
-        DeclareLaunchArgument('bev_height_scale', default_value='1.25'),
+        DeclareLaunchArgument('bev_height_scale', default_value='4.0'),
         DeclareLaunchArgument('vehicle_speed_mps', default_value='0.5'),
-        DeclareLaunchArgument('heading_gain', default_value='0.7'),
+        DeclareLaunchArgument('heading_gain', default_value='0.3'),
         DeclareLaunchArgument('lane_timeout_sec', default_value='0.8'),
         DeclareLaunchArgument('log_period_sec', default_value='0.5'),
         DeclareLaunchArgument('use_image_publisher', default_value='true'),
@@ -69,6 +73,8 @@ def generate_launch_description():
                 'video_path': video_path,
                 'logger': show_image,
                 'timer': camera_timer,
+                'image_width': ParameterValue(image_width, value_type=int),
+                'image_height': ParameterValue(image_height, value_type=int),
                 'pub_topic': 'image_raw',
             }],
         ),
