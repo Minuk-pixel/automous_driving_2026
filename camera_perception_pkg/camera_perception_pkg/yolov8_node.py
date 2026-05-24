@@ -55,7 +55,7 @@ class Yolov8Node(LifecycleNode):
         # 딥러닝 모델 pt 파일명 작성
         #self.declare_parameter("model", "yolov8m.pt")
         # self.declare_parameter("model", "best.pt")
-        self.declare_parameter("model", "/home/minuk/ros2_ws/src/camera_perception_pkg/best_0521.pt")
+        self.declare_parameter("model", "/home/minuk/ros2_ws/src/camera_perception_pkg/best_0524.pt")
         
         # 추론 하드웨어 선택 (cpu / gpu) 
         # self.declare_parameter("device", "cpu")
@@ -63,9 +63,13 @@ class Yolov8Node(LifecycleNode):
         #----------------------------------------------
         
         self.declare_parameter("threshold", 0.5)
+        self.declare_parameter("imgsz", 320)
+        self.declare_parameter("frame_skip", 2)
+        self.declare_parameter("half", True)
         self.declare_parameter("enable", True)
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.RELIABLE)
+        self.frame_count = 0
 
         self.get_logger().info('Yolov8Node created')
 
@@ -80,6 +84,15 @@ class Yolov8Node(LifecycleNode):
 
         self.threshold = self.get_parameter(
             "threshold").get_parameter_value().double_value
+
+        self.imgsz = self.get_parameter(
+            "imgsz").get_parameter_value().integer_value
+
+        self.frame_skip = self.get_parameter(
+            "frame_skip").get_parameter_value().integer_value
+
+        self.half = self.get_parameter(
+            "half").get_parameter_value().bool_value
 
         self.enable = self.get_parameter(
             "enable").get_parameter_value().bool_value
@@ -247,7 +260,10 @@ class Yolov8Node(LifecycleNode):
         return keypoints_list
 
     def image_cb(self, msg: Image) -> None:
-        print(msg.header)
+        self.frame_count += 1
+        frame_skip = max(1, int(self.frame_skip))
+        if self.frame_count % frame_skip != 0:
+            return
 
         if self.enable:
 
@@ -258,6 +274,8 @@ class Yolov8Node(LifecycleNode):
                 verbose=False,
                 stream=False,
                 conf=self.threshold,
+                imgsz=self.imgsz,
+                half=(self.half and 'cuda' in self.device),
                 device=self.device
             )
             results: Results = results[0].cpu()

@@ -66,6 +66,7 @@ class ImagePublisherNode(Node):
         
         if self.data_source == 'camera':
             self.cap = cv2.VideoCapture(self.cam_num)
+            self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         elif self.data_source == 'video':
@@ -100,7 +101,7 @@ class ImagePublisherNode(Node):
                 image_msg.header = Header()
                 image_msg.header.stamp = self.get_clock().now().to_msg()
                 image_msg.header.frame_id = 'image_frame' 
-                self.publisher.publish(self.br.cv2_to_imgmsg(frame))
+                self.publisher.publish(image_msg)
                 if self.logger:
                     cv2.imshow('Camera Image', frame)
                     cv2.waitKey(1)

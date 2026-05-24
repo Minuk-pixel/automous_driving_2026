@@ -16,6 +16,7 @@ DRIVABLE_CLASS_NAME = "lane"
 IPM_SRC_POINTS = [238.0, 316.0, 402.0, 313.0, 501.0, 476.0, 155.0, 476.0]
 IPM_DST_LEFT_RATIO = 0.3
 IPM_DST_RIGHT_RATIO = 0.7
+BEV_HEIGHT_SCALE = 1.25
 
 ROW_STRIDE = 4
 MIN_ROAD_WIDTH_PX = 20
@@ -31,6 +32,7 @@ class LaneDebugVisualizerNode(Node):
         self.ipm_src_points = self.declare_parameter('ipm_src_points', IPM_SRC_POINTS).value
         self.ipm_dst_left_ratio = self.declare_parameter('ipm_dst_left_ratio', IPM_DST_LEFT_RATIO).value
         self.ipm_dst_right_ratio = self.declare_parameter('ipm_dst_right_ratio', IPM_DST_RIGHT_RATIO).value
+        self.bev_height_scale = self.declare_parameter('bev_height_scale', BEV_HEIGHT_SCALE).value
         self.row_stride = self.declare_parameter('row_stride', ROW_STRIDE).value
         self.min_road_width_px = self.declare_parameter('min_road_width_px', MIN_ROAD_WIDTH_PX).value
         self.debug_frame_skip = self.declare_parameter('debug_frame_skip', DEBUG_FRAME_SKIP).value
@@ -107,15 +109,16 @@ class LaneDebugVisualizerNode(Node):
 
     def _bird_convert(self, img):
         h, w = img.shape[:2]
+        bev_h = max(1, int(round(h * float(self.bev_height_scale))))
         src_mat = np.float32(self.ipm_src_points).reshape(4, 2)
         dst_mat = np.float32([
             [round(w * self.ipm_dst_left_ratio), 0],
             [round(w * self.ipm_dst_right_ratio), 0],
-            [round(w * self.ipm_dst_right_ratio), h - 1],
-            [round(w * self.ipm_dst_left_ratio), h - 1],
+            [round(w * self.ipm_dst_right_ratio), bev_h - 1],
+            [round(w * self.ipm_dst_left_ratio), bev_h - 1],
         ])
         transform_matrix = cv2.getPerspectiveTransform(src_mat, dst_mat)
-        warped = cv2.warpPerspective(img, transform_matrix, (w, h), flags=cv2.INTER_NEAREST)
+        warped = cv2.warpPerspective(img, transform_matrix, (w, bev_h), flags=cv2.INTER_NEAREST)
         _, binary_warped = cv2.threshold(warped, 127, 255, cv2.THRESH_BINARY)
         return binary_warped
 

@@ -16,8 +16,8 @@ PUB_TOPIC_NAME = "topic_control_signal"
 
 TIMER = 0.05
 VEHICLE_SPEED_MPS = 0.5
-LEFT_SPEED_COMMAND = 100
-RIGHT_SPEED_COMMAND = 100
+LEFT_SPEED_COMMAND = 150
+RIGHT_SPEED_COMMAND = 150
 # vehicle_speed_mps 크게 설정
 # → 같은 CTE에도 조향 반응 약해짐
 
@@ -28,7 +28,7 @@ RIGHT_SPEED_COMMAND = 100
 # → 저속에서 조향 튐 완화
 
 STANLEY_GAIN = 0.8
-HEADING_GAIN = 0.7
+HEADING_GAIN = 0.2
 CURVATURE_GAIN = 0.0
 SOFTENING_SPEED_MPS = 0.15
 FRONT_AXLE_OFFSET_M = 0.0
@@ -36,7 +36,8 @@ FRONT_AXLE_OFFSET_M = 0.0
 MAX_STEER_RAD = np.deg2rad(20.0)
 MAX_STEERING_STEP = 7
 STEERING_SIGN = -1.0
-LANE_TIMEOUT_SEC = 0.3
+LANE_TIMEOUT_SEC = 0.8
+LOG_PERIOD_SEC = 0.5
 #----------------------------------------------
 
 
@@ -64,6 +65,7 @@ class StanleyControllerNode(Node):
         self.max_steering_step = self.declare_parameter('max_steering_step', MAX_STEERING_STEP).value
         self.steering_sign = self.declare_parameter('steering_sign', STEERING_SIGN).value
         self.lane_timeout_sec = self.declare_parameter('lane_timeout_sec', LANE_TIMEOUT_SEC).value
+        self.log_period_sec = self.declare_parameter('log_period_sec', LOG_PERIOD_SEC).value
 
         self.qos_profile = QoSProfile(
             reliability=QoSReliabilityPolicy.RELIABLE,
@@ -82,6 +84,7 @@ class StanleyControllerNode(Node):
 
         self.latest_lane_trajectory = None
         self.latest_lane_time = None
+        self.latest_log_time = None
 
         self.trajectory_sub = self.create_subscription(
             LaneTrajectory,
@@ -103,7 +106,7 @@ class StanleyControllerNode(Node):
 
     def timer_callback(self):
         if self._lane_is_unavailable():
-            self._publish_motion_command(0, 0, 0)
+            self._publish_motion_command(0, 50, 50)
             return
 
         coeffs = (
@@ -114,13 +117,14 @@ class StanleyControllerNode(Node):
         delta_rad, debug = self.controller.compute_delta(coeffs, self.vehicle_speed_mps)
         steering_command = self._delta_to_steering_step(delta_rad)
 
-        self.get_logger().info(
-            f"delta={np.rad2deg(delta_rad):.2f}deg, "
-            f"steering={steering_command}, "
-            f"cte={debug.cte_m:.3f}m, "
-            f"theta_e={np.rad2deg(debug.theta_e_rad):.2f}deg, "
-            f"kappa={debug.curvature:.3f}",
-        )
+        if self._should_log():
+            self.get_logger().info(
+                f"delta={np.rad2deg(delta_rad):.2f}deg, "
+                f"steering={steering_command}, "
+                f"cte={debug.cte_m:.3f}m, "
+                f"theta_e={np.rad2deg(debug.theta_e_rad):.2f}deg, "
+                f"kappa={debug.curvature:.3f}",
+            )
 
         self._publish_motion_command(
             steering_command,
@@ -134,6 +138,19 @@ class StanleyControllerNode(Node):
 
         elapsed = self.get_clock().now() - self.latest_lane_time
         return elapsed.nanoseconds * 1e-9 > self.lane_timeout_sec
+
+    def _should_log(self):
+        now = self.get_clock().now()
+        if self.latest_log_time is None:
+            self.latest_log_time = now
+            return True
+
+        elapsed = now - self.latest_log_time
+        if elapsed.nanoseconds * 1e-9 < float(self.log_period_sec):
+            return False
+
+        self.latest_log_time = now
+        return True
 
     def _delta_to_steering_step(self, delta_rad):
         max_steer_rad = max(abs(float(self.max_steer_rad)), 1e-6)
