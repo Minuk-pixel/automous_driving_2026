@@ -10,7 +10,7 @@ def parse_args():
     parser.add_argument(
         "bag_path",
         nargs="?",
-        default="rosbag2_2026_05_15-17_52_47",
+        default="rosbag2_2026_05_22-17_19_38",
         help="Path to the rosbag2 directory.",
     )
     parser.add_argument(
@@ -29,7 +29,7 @@ def parse_args():
         "-i",
         "--interval",
         type=float,
-        default=0.5,
+        default=0.1,
         help="Capture interval in seconds.",
     )
     parser.add_argument(

@@ -64,11 +64,13 @@ class Yolov8Node(LifecycleNode):
         
         self.declare_parameter("threshold", 0.5)
         self.declare_parameter("imgsz", 320)
-        self.declare_parameter("frame_skip", 2)
+        self.declare_parameter("frame_skip", 3)
         self.declare_parameter("half", True)
         self.declare_parameter("enable", True)
+        self.declare_parameter("image_topic", "image_raw")
+        # self.declare_parameter("image_topic", "image_raw_resized")
         self.declare_parameter("image_reliability",
-                               QoSReliabilityPolicy.RELIABLE)
+                               QoSReliabilityPolicy.BEST_EFFORT)
         self.frame_count = 0
 
         self.get_logger().info('Yolov8Node created')
@@ -96,6 +98,9 @@ class Yolov8Node(LifecycleNode):
 
         self.enable = self.get_parameter(
             "enable").get_parameter_value().bool_value
+
+        self.image_topic = self.get_parameter(
+            "image_topic").get_parameter_value().string_value
 
         self.reliability = self.get_parameter(
             "image_reliability").get_parameter_value().integer_value
@@ -137,7 +142,7 @@ class Yolov8Node(LifecycleNode):
         # subs
         self._sub = self.create_subscription(
             Image,
-            "image_raw",
+            self.image_topic,
             self.image_cb,
             self.image_qos_profile
         )

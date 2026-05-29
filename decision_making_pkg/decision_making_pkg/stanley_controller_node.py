@@ -18,6 +18,7 @@ TIMER = 0.05
 VEHICLE_SPEED_MPS = 0.5
 LEFT_SPEED_COMMAND = 255
 RIGHT_SPEED_COMMAND = 255
+
 # vehicle_speed_mps 크게 설정
 # → 같은 CTE에도 조향 반응 약해짐
 
@@ -27,8 +28,8 @@ RIGHT_SPEED_COMMAND = 255
 # softening_speed_mps 크게 설정
 # → 저속에서 조향 튐 완화
 
-STANLEY_GAIN = 1.0 # 1.4
-HEADING_GAIN = 0.1
+STANLEY_GAIN = 1.0 
+HEADING_GAIN = 0.3
 CURVATURE_GAIN = 0.0
 SOFTENING_SPEED_MPS = 0.15
 FRONT_AXLE_OFFSET_M = 0.0
@@ -36,7 +37,7 @@ FRONT_AXLE_OFFSET_M = 0.0
 MAX_STEER_RAD = np.deg2rad(20.0)
 MAX_STEERING_STEP = 7
 STEERING_SIGN = -1.0
-LANE_TIMEOUT_SEC = 0.8
+LANE_TIMEOUT_SEC = 1.0
 LOG_PERIOD_SEC = 0.5
 #----------------------------------------------
 

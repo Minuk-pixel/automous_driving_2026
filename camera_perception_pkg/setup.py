@@ -21,9 +21,12 @@ setup(
     entry_points={
         'console_scripts': [
             'image_publisher_node = camera_perception_pkg.image_publisher_node:main',
+            'image_resize_node = camera_perception_pkg.image_resize_node:main',
             'yolov8_node = camera_perception_pkg.yolov8_node:main',
+            'yolov8_object_detection_node = camera_perception_pkg.yolov8_object_detection_node:main',
             'traffic_light_detector_node = camera_perception_pkg.traffic_light_detector_node:main',
             'lane_info_extractor_node = camera_perception_pkg.lane_info_extractor_node:main',
+            'mission_lane_info_extractor_node = camera_perception_pkg.mission_lane_info_extractor_node:main',
         ],
     },
 )

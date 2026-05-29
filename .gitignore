@@ -5,7 +5,7 @@ __pycache__/
 *.pyc
 *.pt
 *.zip
-*.bag
+*.bagc
 *.db3
 *.mp4
 *.avi

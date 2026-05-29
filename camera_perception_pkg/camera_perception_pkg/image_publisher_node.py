@@ -27,13 +27,13 @@ CAM_NUM = 4
 IMAGE_DIRECTORY_PATH = 'src/camera_perception_pkg/camera_perception_pkg/lib/Collected_Datasets/sample_dataset'
 
 # 비디오 데이터 파일의 경로를 입력
-VIDEO_FILE_PATH = 'src/camera_perception_pkg/camera_perception_pkg/lib/Collected_Datasets/driving_simulation.mp4'
+VIDEO_FILE_PATH = '/home/minuk/ros2_ws/src/camera_perception_pkg/camera_perception_pkg/lib/Collected_Datasets/driving_simulation.mp4'
 
 # 화면에 publish하는 이미지를 띄울것인지 여부: True, 또는 False 중 택1하여 입력
 SHOW_IMAGE = True
 
 # 이미지 발행 주기 (초) - 소수점 필요 (int형은 반영되지 않음)
-TIMER = 0.03
+TIMER = 0.1
 IMAGE_WIDTH = 320
 IMAGE_HEIGHT = 240
 #----------------------------------------------

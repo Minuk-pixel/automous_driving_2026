@@ -53,6 +53,8 @@ class Yolov8VisualizerNode(LifecycleNode):
         self.cv_bridge = CvBridge()
 
         # params
+        self.declare_parameter("image_topic", "image_raw")
+        self.declare_parameter("detection_topic", "detections")
         self.declare_parameter("image_reliability",
                                QoSReliabilityPolicy.RELIABLE)
         self.declare_parameter("show_image", True)
@@ -74,6 +76,10 @@ class Yolov8VisualizerNode(LifecycleNode):
             "show_image").get_parameter_value().bool_value
         self.window_name = self.get_parameter(
             "window_name").get_parameter_value().string_value
+        self.image_topic = self.get_parameter(
+            "image_topic").get_parameter_value().string_value
+        self.detection_topic = self.get_parameter(
+            "detection_topic").get_parameter_value().string_value
 
         # pubs
         self._dbg_pub = self.create_publisher(Image, "yolov8_visualized_img", 10)
@@ -89,9 +95,9 @@ class Yolov8VisualizerNode(LifecycleNode):
 
         # subs
         self.image_sub = message_filters.Subscriber(
-            self, Image, "image_raw", qos_profile=self.image_qos_profile)
+            self, Image, self.image_topic, qos_profile=self.image_qos_profile)
         self.detections_sub = message_filters.Subscriber(
-            self, DetectionArray, "detections", qos_profile=10)
+            self, DetectionArray, self.detection_topic, qos_profile=10)
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
             (self.image_sub, self.detections_sub), 10, 0.5)

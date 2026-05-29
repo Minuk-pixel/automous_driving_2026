@@ -27,6 +27,7 @@ setup(
             'motion_planner_node = decision_making_pkg.motion_planner_node:main',
             'path_planner_node = decision_making_pkg.path_planner_node:main',
             'stanley_controller_node = decision_making_pkg.stanley_controller_node:main',
+            'obstacle_mission_controller_node = decision_making_pkg.obstacle_mission_controller_node:main',
             'test_node = decision_making_pkg.sliding_window_lane_detect_ros2:main',
             'test_node_2 = decision_making_pkg.sliding_window_lane_detect_image_raw_ros2:main'
 
