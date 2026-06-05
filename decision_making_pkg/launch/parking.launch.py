@@ -20,13 +20,6 @@ def generate_launch_description():
 
         Node(
             package='lidar_perception_pkg',
-            executable='lidar_processor_node',
-            name='lidar_processor_node',
-            output='screen',
-        ),
-
-        Node(
-            package='lidar_perception_pkg',
             executable='parking_perception_node',
             name='parking_perception_node',
             output='screen',
