@@ -66,15 +66,6 @@ YOLO 모델은 두 종류로 나누어 사용하였다. 첫 번째는 주행 가
 
 [그림 4 삽입: lane_keeping.launch.py 노드 구조도]
 
-```mermaid
-graph LR
-    A[image_publisher_node] -->|/image_raw| B[yolov8_node]
-    B -->|/detections| C[lane_info_extractor_node]
-    C -->|/lane_trajectory| D[stanley_controller_node]
-    D -->|/topic_control_signal| E[serial_sender_node]
-    E --> F[Arduino / vehicle]
-    B -. optional .-> G[lane_debug_visualizer_node]
-```
 
 시간측정 주행의 perception 및 trajectory pipeline은 다음과 같다.
 
@@ -120,21 +111,6 @@ graph LR
 
 [그림 9 삽입: obstacle_mission.launch.py 노드 구조도]
 
-```mermaid
-graph LR
-    A[image_publisher_node] -->|/image_raw| B[yolov8_node - segmentation]
-    A -->|/image_raw| C[yolov8_object_detection_node]
-    B -->|/detections| D[mission_lane_info_extractor_node]
-    D -->|/mission/right_lane_trajectory| F[obstacle_mission_controller_node]
-    D -->|/mission/left_lane_trajectory| F
-    C -->|/object_detections| F
-    A -->|/image_raw size| F
-    F -->|/topic_control_signal| G[serial_sender_node]
-    G --> H[Arduino / vehicle]
-    B -. optional .-> I[yolov8_visualizer_node]
-    C -. optional .-> J[object_detection_visualizer_node]
-```
-
 장애물 미션에서는 오른쪽 차선 class인 `lane`과 왼쪽 차선 class인 `lane_left`를 모두 사용하였다. `mission_lane_info_extractor_node.py`는 두 class에 대해 각각 주행 가능 영역 mask를 생성하고, 시간측정 주행과 동일한 BEV, midpoint scan, meter 변환, 2차 곡선 fitting 과정을 수행한다. 그 결과 오른쪽 차선 기준 trajectory와 왼쪽 차선 기준 trajectory를 각각 publish한다.
 
 미션 제어는 stage 기반 finite state machine으로 구현하였다.
@@ -162,20 +138,6 @@ graph LR
 수직 주차 미션은 차량 후방에 장착된 LiDAR만을 이용하여 수행하였다. 룰북에 따르면 차량은 주차된 두 차량 사이에 후진으로 수직 주차해야 하며, 주차 후 3~5초 정차한 뒤 반대쪽 OUT 라인을 통과해야 한다. 또한 차동 회전을 이용한 회전 주차는 허용되지 않으므로, 본 프로젝트에서는 조향 기반의 후진 주차를 수행하도록 제어 로직을 구성하였다.
 
 [그림 12 삽입: parking.launch.py 노드 구조도]
-
-```mermaid
-graph LR
-    A[lidar_publisher_node] -->|/lidar_raw| B[parking_perception_node]
-    A -->|/lidar_raw| C[parking_control_node]
-    A -->|/lidar_raw| D[parking_visualization_node]
-    B -->|/perception_data| C
-    B -->|/perception_data| D
-    C -->|/current_stage| D
-    C -->|/topic_control_signal| E[serial_sender_node]
-    E --> F[Arduino / vehicle]
-    A --> G[lidar_processor_node]
-    G -->|/lidar_processed| H[optional processed scan]
-```
 
 주차 미션은 크게 세 부분으로 구성하였다.
 

@@ -61,7 +61,7 @@ class PerceptionNode(Node):
         self.rear_side_stop_min_range = 0.2
 
         # ROI: stage 1에서 stage 2로 넘어가기 위한 짧은 감지 박스
-        self.roi_side_x_min = -1500.0
+        self.roi_side_x_min = -2000.0
         self.roi_side_x_max = -800.0
         self.roi_rear_y_min = -500.0
         self.roi_rear_y_max = 0.0

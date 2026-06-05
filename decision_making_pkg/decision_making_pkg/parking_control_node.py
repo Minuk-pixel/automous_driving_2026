@@ -51,26 +51,35 @@ class MotionNode(Node):
         self.parking_complete = False
 
         self.ROI_POINT_THRESHOLD = 6
+        self.STAGE1_ROI_ENABLE_DELAY = 5.0
         self.STAGE1_SPEED = 60
-        self.STAGE2_SPEED = 40
+        self.STAGE2_SPEED = 60
         self.STAGE2_STEER = -7
-        self.STAGE2_TARGET_DEG = 48.0
+        self.STAGE2_TARGET_DEG = 50.0
         self.STAGE2_DEG_TOL = 2.0
         self.STAGE3_STOP_TIME = 1.5
         self.STAGE3_STEER = 7
-        self.STAGE4_SPEED = -40
+        self.STAGE4_SPEED = -60
         self.STAGE4_STEER = 7
         self.STAGE4_DEG_TOL = 2.0
-        self.STAGE5_SPEED = -40
+        self.STAGE5_SPEED = -60
         self.STAGE5_STEER = 0
         self.STAGE5_FINE_STEER = 1
         self.STAGE5_ALIGN_TOL = 1.0
         self.STAGE5_ALIGN_STABLE_FRAMES = 8
-        self.STAGE5_MIN_REVERSE_TIME = 0.5
+        self.STAGE5_MIN_REVERSE_TIME = 4
         self.STAGE5_LOST_FRAMES_TO_STOP = 5
+        self.STAGE6_STOP_TIME = 5.0
+        self.STAGE7_STRAIGHT_TIME = 2.0
+        self.STAGE7_RIGHT_TURN_TIME = 10.0
+        self.STAGE7_STRAIGHT_SPEED = 50
+        self.STAGE7_TURN_SPEED = 100
+        self.STAGE7_EXIT_SPEED = 100
+        self.STAGE7_RIGHT_STEER = 7
+        self.STAGE7_STRAIGHT_STEER = 0
         self.REAR_SIDE_CLEAR_FLAG_INDEX = 22
 
-        self.get_logger().info('Motion Node Started with Stage 1-5 Logic.')
+        self.get_logger().info('Motion Node Started with Stage 1-7 Logic.')
 
     def now_sec(self):
         return self.get_clock().now().nanoseconds / 1e9
@@ -189,8 +198,11 @@ class MotionNode(Node):
         rear_side_clear = bool(self.perc_data[self.REAR_SIDE_CLEAR_FLAG_INDEX])
 
         if self.stage == 1:
-            self.speed, self.steer = self.STAGE1_SPEED, 0
-            if point_count >= self.ROI_POINT_THRESHOLD:
+            self.speed, self.steer = self.STAGE1_SPEED, -1
+            if (
+                self.elapsed() >= self.STAGE1_ROI_ENABLE_DELAY
+                and point_count >= self.ROI_POINT_THRESHOLD
+            ):
                 self.change_stage(
                     2,
                     'ROI detected. Stage 2: max left turn.',
@@ -226,7 +238,11 @@ class MotionNode(Node):
 
         elif self.stage == 5:
             if self.parking_complete:
-                self.speed, self.steer = 0, self.STAGE5_STEER
+                self.change_stage(
+                    6,
+                    'Stage 5 parking complete. Stage 6: stop for 5 sec.',
+                    stop_car=True,
+                )
             else:
                 self.speed = self.STAGE5_SPEED
                 self.update_stage5_alignment(is_svm_valid, deg_diff)
@@ -254,9 +270,30 @@ class MotionNode(Node):
                             'Side cars disappeared. Stage 5: parking complete.'
                         )
 
+        elif self.stage == 6:
+            self.speed, self.steer = 0, 0
+            if self.elapsed() >= self.STAGE6_STOP_TIME:
+                self.change_stage(
+                    7,
+                    'Stage 6 stop done. Stage 7: exit sequence.',
+                    stop_car=False,
+                )
+
+        elif self.stage == 7:
+            elapsed = self.elapsed()
+            if elapsed < self.STAGE7_STRAIGHT_TIME:
+                self.speed = self.STAGE7_STRAIGHT_SPEED
+                self.steer = self.STAGE7_STRAIGHT_STEER
+            elif elapsed < self.STAGE7_STRAIGHT_TIME + self.STAGE7_RIGHT_TURN_TIME:
+                self.speed = self.STAGE7_TURN_SPEED
+                self.steer = self.STAGE7_RIGHT_STEER
+            else:
+                self.speed = self.STAGE7_EXIT_SPEED
+                self.steer = self.STAGE7_STRAIGHT_STEER
+
         else:
             self.speed, self.steer = 0, 0
-            self.stage = 5
+            self.stage = 7
 
         self.publish_cmd()
 

@@ -31,7 +31,7 @@ class VisualizationNode(Node):
         self.max_distance = 4000
         self.rotate_view_180 = True
         self.mirror_svm_view = True
-        self.roi_side_x_min = -1500.0
+        self.roi_side_x_min = -2000.0
         self.roi_side_x_max = -800.0
         self.roi_rear_y_min = -500.0
         self.roi_rear_y_max = 0.0
