@@ -7,11 +7,18 @@ from std_msgs.msg import Float32MultiArray
 from sklearn.cluster import DBSCAN # [변경됨] K-Means -> DBSCAN
 from sklearn.svm import SVC
 
+LIDAR_MIN_RANGE_M = 0.3
+LIDAR_MAX_RANGE_M = 3.0
+PARKING_ROI_X_MIN_MM = 800.0
+PARKING_ROI_X_MAX_MM = 2000.0
+PARKING_ROI_Y_MIN_MM = 400.0
+PARKING_ROI_Y_MAX_MM = 1100.0
+
 class PerceptionNode(Node):
     def __init__(self):
         super().__init__('parking_perception_node')
         
-        self.scan_sub = self.create_subscription(LaserScan, '/scan', self.lidar_callback, 10)
+        self.scan_sub = self.create_subscription(LaserScan, '/lidar_raw', self.lidar_callback, 10)
         self.perception_pub = self.create_publisher(Float32MultiArray, '/perception_data', 10)
         
         # [변경됨] DBSCAN 설정: 반경 400mm 내에 점이 5개 이상 있으면 하나의 군집으로 인정
@@ -25,7 +32,7 @@ class PerceptionNode(Node):
 
     def lidar_callback(self, msg):
         ranges = np.array(msg.ranges)
-        valid_indices = np.isfinite(ranges) & (ranges > 1.2) & (ranges <= 12.0)
+        valid_indices = np.isfinite(ranges) & (ranges > LIDAR_MIN_RANGE_M) & (ranges <= LIDAR_MAX_RANGE_M)
         valid_ranges = ranges[valid_indices] * 1000.0 
         angles = msg.angle_min + np.arange(len(ranges)) * msg.angle_increment
         valid_angles = angles[valid_indices] - (np.pi / 2) 
@@ -41,8 +48,12 @@ class PerceptionNode(Node):
 
         if len(lidar_data) == 0: return
 
-        # ROI & 충돌 방지 계산 (기존과 동일)
-        roi_mask = (lidar_data[:, 0] >= -500) & (lidar_data[:, 0] <= 500) & (lidar_data[:, 1] >= 2000) & (lidar_data[:, 1] <= 3000)
+        roi_mask = (
+            (lidar_data[:, 0] >= PARKING_ROI_X_MIN_MM) &
+            (lidar_data[:, 0] <= PARKING_ROI_X_MAX_MM) &
+            (lidar_data[:, 1] >= PARKING_ROI_Y_MIN_MM) &
+            (lidar_data[:, 1] <= PARKING_ROI_Y_MAX_MM)
+        )
         point_count = float(np.sum(roi_mask))
 
         close_mask = (lidar_data[:, 1] > 0) & (lidar_data[:, 1] < 1500) & (np.abs(lidar_data[:, 0]) < 800)
@@ -52,7 +63,7 @@ class PerceptionNode(Node):
             min_rear_dist = float(np.min(dists))
 
         # [핵심 변경] DBSCAN 및 Tracking 로직
-        mask = (np.abs(lidar_data[:, 0]) < 6000) & (lidar_data[:, 1] > -6000) & (lidar_data[:, 1] < 8000)
+        mask = (np.abs(lidar_data[:, 0]) < 3000) & (lidar_data[:, 1] > -3000) & (lidar_data[:, 1] < 3000)
         rear_points = lidar_data[mask]
 
         if len(rear_points) > 10:
@@ -113,6 +124,12 @@ class PerceptionNode(Node):
         out_msg = Float32MultiArray()
         out_msg.data = [point_count, is_svm_valid, x_diff, deg_diff, min_rear_dist, w0, w1, b, c1_x, c1_y, c2_x, c2_y]
         self.perception_pub.publish(out_msg)
+        self.get_logger().info(
+            f'Published /perception_data: roi_points={point_count:.0f}, '
+            f'svm={int(is_svm_valid)}, x_diff={x_diff:.1f}mm, '
+            f'deg_diff={deg_diff:.1f}deg, min_rear={min_rear_dist:.1f}mm',
+            throttle_duration_sec=1.0,
+        )
 
 def main(args=None):
     rclpy.init(args=args)
@@ -121,6 +138,7 @@ def main(args=None):
     except KeyboardInterrupt: pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__': main()

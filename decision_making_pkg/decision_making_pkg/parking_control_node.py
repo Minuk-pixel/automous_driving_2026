@@ -6,13 +6,16 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float32MultiArray, Int32
 from interfaces_pkg.msg import MotionCommand
 
+LIDAR_MIN_RANGE_M = 0.3
+LIDAR_MAX_RANGE_M = 3.0
+
 class MotionNode(Node):
     def __init__(self):
         super().__init__('parking_motion_node')
 
         # Subscriber & Publisher
         self.perc_sub = self.create_subscription(Float32MultiArray, '/perception_data', self.perc_callback, 10)
-        self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 10)
+        self.scan_sub = self.create_subscription(LaserScan, '/lidar_raw', self.scan_callback, 10)
         self.control_pub = self.create_publisher(MotionCommand, '/topic_control_signal', 10)
         self.stage_pub = self.create_publisher(Int32, '/current_stage', 10)
 
@@ -36,7 +39,7 @@ class MotionNode(Node):
         self.STOP_X_MARGIN = -100.0
         self.EXIT_X_MARGIN = 600.0
         self.UPPER_Y_MIN = 300.0
-        self.UPPER_Y_MAX = 6000.0
+        self.UPPER_Y_MAX = 3000.0
         self.X_RANGE_LIMIT = 2500.0
         self.MIN_STOP_POINTS = 3
 
@@ -72,7 +75,7 @@ class MotionNode(Node):
 
     def scan_callback(self, msg):
         ranges = np.array(msg.ranges)
-        valid = np.isfinite(ranges) & (ranges > 1.2) & (ranges <= 12.0)
+        valid = np.isfinite(ranges) & (ranges > LIDAR_MIN_RANGE_M) & (ranges <= LIDAR_MAX_RANGE_M)
 
         if not np.any(valid):
             self.upper_count = 0
@@ -106,6 +109,12 @@ class MotionNode(Node):
         cmd_msg.left_speed = int(self.speed)
         cmd_msg.right_speed = int(self.speed)
         self.control_pub.publish(cmd_msg)
+        self.get_logger().info(
+            f'Published control: stage={self.stage}, '
+            f'steer={cmd_msg.steering}, speed={cmd_msg.left_speed}, '
+            f'roi_points={self.perc_data[0]:.0f}, svm={int(bool(self.perc_data[1]))}',
+            throttle_duration_sec=1.0,
+        )
 
     def control_loop(self):
         # 로컬 변수 할당
@@ -123,21 +132,21 @@ class MotionNode(Node):
         # [최적화 4] change_stage()를 활용하여 제어 루프를 훨씬 깔끔하게 정리
         if self.stage == 1:
             self.speed, self.steer = 100, 0
-            if point_count >= 10:
+            if point_count >= 5:
                 self.change_stage(2, 'Spot Found. Stage 2.')
 
-        elif self.stage == 2:
-            if elapsed < 1.0:
-                self.speed, self.steer = 0, 0
-            elif elapsed < 6.4:
-                self.speed, self.steer = 50, -7
-            else:
-                self.change_stage(3, 'Stage 3.')
+        # elif self.stage == 2:
+        #     if elapsed < 1.0:
+        #         self.speed, self.steer = 0, 0
+        #     elif elapsed < 6.4:
+        #         self.speed, self.steer = 50, -7
+        #     else:
+        #         self.change_stage(3, 'Stage 3.')
 
-        elif self.stage == 3:
-            self.speed, self.steer = 0, 0
-            if elapsed > 2.0:
-                self.change_stage(4, 'Stage 4: Align.')
+        # elif self.stage == 3:
+        #     self.speed, self.steer = 0, 0
+        #     if elapsed > 2.0:
+        #         self.change_stage(4, 'Stage 4: Align.')
 
         elif self.stage == 4:
             if not is_svm_valid:
@@ -232,6 +241,7 @@ def main(args=None):
     except KeyboardInterrupt: pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 if __name__ == '__main__': main()
