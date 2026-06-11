@@ -16,7 +16,7 @@ const int STEERING_SPEED = 128;
 // 가변저항 값 범위
 //const int resistance_most_left = 580;
 //const int resistance_most_right = 415;
-
+//
 const int resistance_most_left = 577;
 const int resistance_most_right = 413;
 

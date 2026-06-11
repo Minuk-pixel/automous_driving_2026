@@ -10,13 +10,13 @@ def parse_args():
     parser.add_argument(
         "bag_path",
         nargs="?",
-        default="rosbag2_2026_05_22-17_19_38",
+        default="rosbag2_2026_06_11-15_13_39",
         help="Path to the rosbag2 directory.",
     )
     parser.add_argument(
         "-o",
         "--output-dir",
-        default="extracted_image_raw_0_5s",
+        default="objectdetection",
         help="Directory where extracted images will be saved.",
     )
     parser.add_argument(

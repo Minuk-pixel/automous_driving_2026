@@ -219,21 +219,21 @@ DBSCAN 및 SVM 기반 주차 기준선 추출 구조는 구현되어 있으나, 
 
 | 위치 | 추천 그림 |
 | --- | --- |
-| 그림 1 | 룰북 트랙 구성 또는 평가 미션 전체 도식 |
-| 그림 2 | 차량 전체 사진, 전방 카메라와 후방 LiDAR 위치 표시 |
-| 그림 3 | 조교님 제공 ROS2 Architecture 원본 구조도 |
-| 그림 4 | lane_keeping.launch.py 노드 구조도 |
-| 그림 5 | YOLO segmentation mask 결과 |
-| 그림 6 | BEV 변환 전후 비교 |
-| 그림 7 | midpoint scan 및 2차 곡선 fitting 결과 |
-| 그림 8 | Stanley control 변수 도식 |
-| 그림 9 | obstacle_mission.launch.py 노드 구조도 |
-| 그림 10 | car_2/car_3/traffic light object detection 결과 |
+| 그림 1 | 룰북 트랙 구성 또는 평가 미션 전체 도식 | 
+| 그림 2 | 차량 전체 사진, 전방 카메라와 후방 LiDAR 위치 표시 | 
+| 그림 3 | 조교님 제공 ROS2 Architecture 원본 구조도 | 
+| 그림 4 | lane_keeping.launch.py 노드 구조도 | 
+| 그림 5 | YOLO segmentation mask 결과 | 
+| 그림 6 | BEV 변환 전후 비교 | 생략
+| 그림 7 | midpoint scan 및 2차 곡선 fitting 결과 |(이거 위아래로 기니까 위아래로 비율 줄이거나 그냥 잘라서 써도 됌)
+| 그림 8 | Stanley control 변수 도식 | 
+| 그림 9 | obstacle_mission.launch.py 노드 구조도 | 
+| 그림 10 | car_2/car_3/traffic light object detection 결과 | 
 | 그림 11 | 장애물 미션 stage FSM |
-| 그림 12 | parking.launch.py 노드 구조도 |
+| 그림 12 | parking.launch.py 노드 구조도 | 
 | 그림 13 | Main Lidar Map 3m 및 ROI Monitor |
 | 그림 14 | DBSCAN/SVM Parking Monitor |
-| 그림 15~22 | 실험 결과 캡처, 로그, 튜닝 전후 비교 |
+| 그림 15~22 | 실험 결과 캡처, 로그, 튜닝 전후 비교 | 생략
 
 ## References
 

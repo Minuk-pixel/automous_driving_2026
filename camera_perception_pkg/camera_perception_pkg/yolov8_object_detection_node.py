@@ -22,7 +22,7 @@ from interfaces_pkg.msg import Detection
 from interfaces_pkg.msg import DetectionArray
 
 
-MODEL_PATH = "/home/minuk/ros2_ws/src/camera_perception_pkg/od_0529.pt"
+MODEL_PATH = "/home/minuk/ros2_ws/src/camera_perception_pkg/best_object_0611.pt"
 DEVICE = "cuda:0"
 THRESHOLD = 0.5
 IMGSZ = 320

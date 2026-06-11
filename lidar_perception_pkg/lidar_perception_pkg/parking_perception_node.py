@@ -8,6 +8,17 @@ from std_msgs.msg import Int32
 from sklearn.cluster import DBSCAN # [변경됨] K-Means -> DBSCAN
 from sklearn.svm import SVC
 
+
+CLUSTER_HOLD_SEC = 1.0
+CLUSTER_HOLD_INDICES = (
+    1, 2, 3,       # SVM valid, x_diff, deg_diff
+    5, 6, 7,       # SVM coefficients
+    8, 9, 10, 11,  # car centroids
+    12, 13, 14,    # right car flag + centroid
+    15, 16, 17, 18, 19,  # two-car flag, gap, side-pair count
+)
+
+
 class PerceptionNode(Node):
     def __init__(self):
         super().__init__('parking_perception_node')
@@ -16,8 +27,8 @@ class PerceptionNode(Node):
         self.stage_sub = self.create_subscription(Int32, '/current_stage', self.stage_callback, 10)
         self.perception_pub = self.create_publisher(Float32MultiArray, '/perception_data', 10)
         
-        # [변경됨] DBSCAN 설정: 반경 400mm 내에 점이 5개 이상 있으면 하나의 군집으로 인정
-        self.dbscan = DBSCAN(eps=400, min_samples=5)
+        # [변경됨] DBSCAN 설정: 반경 550mm 내에 점이 3개 이상 있으면 하나의 군집으로 인정
+        self.dbscan = DBSCAN(eps=800, min_samples=2)
         self.svm = SVC(kernel='linear')
         
         # Stage 2 tracking: lock the first right-side car, keep following it
@@ -25,6 +36,8 @@ class PerceptionNode(Node):
         self.primary_car_centroid = None
         self.secondary_car_centroid = None
         self.current_stage = 1
+        self.last_cluster_data = None
+        self.last_cluster_time = None
 
         # 실차 튜닝용 ROI/판단 파라미터
         # ROI 진입 판단 범위: 현재 시각화 기준 화면 오른쪽/전방 0.5m 박스
@@ -32,7 +45,7 @@ class PerceptionNode(Node):
         self.right_x_max = 0.0
         self.right_y_min = -500.0
         self.right_y_max = 0.0
-        self.car_candidate_max_dist = 2500.0
+        self.car_candidate_max_dist = 4000.0
         self.tracking_match_max_dist = 900.0
         self.min_gap_width = 600.0
         self.wall_y_max = -450.0
@@ -69,7 +82,42 @@ class PerceptionNode(Node):
         self.get_logger().info('Perception Node Started: Running DBSCAN & Tracking...')
 
     def stage_callback(self, msg):
+        if msg.data != self.current_stage:
+            self.clear_cluster_hold()
         self.current_stage = msg.data
+
+    def clear_cluster_hold(self):
+        self.last_cluster_data = None
+        self.last_cluster_time = None
+
+    def cluster_output_is_valid(self, data):
+        return (
+            bool(data[1])
+            # or bool(data[12])
+            or bool(data[15])
+            or data[19] > 0.0
+        )
+
+    def cluster_hold_is_available(self):
+        if self.last_cluster_data is None or self.last_cluster_time is None:
+            return False
+
+        elapsed = self.get_clock().now() - self.last_cluster_time
+        return elapsed.nanoseconds * 1e-9 <= CLUSTER_HOLD_SEC
+
+    def update_or_apply_cluster_hold(self, data):
+        if self.cluster_output_is_valid(data):
+            self.last_cluster_data = list(data)
+            self.last_cluster_time = self.get_clock().now()
+            return data
+
+        if not self.cluster_hold_is_available():
+            return data
+
+        held_data = list(data)
+        for idx in CLUSTER_HOLD_INDICES:
+            held_data[idx] = self.last_cluster_data[idx]
+        return held_data
 
     def make_clusters(self, points, labels):
         clusters = []
@@ -391,7 +439,7 @@ class PerceptionNode(Node):
 
         # 기존 12개 값은 유지하고, 뒤에 주차 stage 판단용 값을 추가합니다.
         out_msg = Float32MultiArray()
-        out_msg.data = [
+        out_data = [
             point_count, is_svm_valid, x_diff, deg_diff, min_rear_dist,
             w0, w1, b, c1_x, c1_y, c2_x, c2_y,
             right_car_detected, right_cx, right_cy,
@@ -399,6 +447,7 @@ class PerceptionNode(Node):
             side_pair_point_count,
             rear_side_90_count, rear_side_270_count, rear_side_clear,
         ]
+        out_msg.data = self.update_or_apply_cluster_hold(out_data)
         self.perception_pub.publish(out_msg)
 
 def main(args=None):

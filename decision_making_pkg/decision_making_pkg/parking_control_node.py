@@ -50,13 +50,13 @@ class MotionNode(Node):
         self.stage5_alignment_locked = False
         self.parking_complete = False
 
-        self.ROI_POINT_THRESHOLD = 6
-        self.STAGE1_ROI_ENABLE_DELAY = 5.0
-        self.STAGE1_SPEED = 60
-        self.STAGE2_SPEED = 60
+        self.ROI_POINT_THRESHOLD = 5
+        self.STAGE1_ROI_ENABLE_DELAY = 7.0
+        self.STAGE1_SPEED = 80
+        self.STAGE2_SPEED = 50
         self.STAGE2_STEER = -7
-        self.STAGE2_TARGET_DEG = 50.0
-        self.STAGE2_DEG_TOL = 2.0
+        self.STAGE2_TARGET_DEG = 55.0
+        self.STAGE2_DEG_TOL = 10.0
         self.STAGE3_STOP_TIME = 1.5
         self.STAGE3_STEER = 7
         self.STAGE4_SPEED = -60
